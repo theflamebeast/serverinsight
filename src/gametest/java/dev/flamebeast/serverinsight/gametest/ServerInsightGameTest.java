@@ -66,6 +66,7 @@ public final class ServerInsightGameTest implements FabricClientGameTest {
 			assertNoVanillaCommandFingerprinted(context);
 			assertAddressResolverWorks(context);
 			assertGeolocationParsing();
+			assertDistanceCalculation();
 			assertFlagMixinApplies();
 			assertFlagTextureExists(context);
 			assertCommandRunsAndCompletesScan(context);
@@ -267,6 +268,39 @@ public final class ServerInsightGameTest implements FabricClientGameTest {
 			if (!GeoLocator.isPublicAddress(pub)) {
 				throw new AssertionError(pub + " should be eligible for lookup");
 			}
+		}
+	}
+
+	/**
+	 * The distance the flag tooltip reports comes from a pure function over two
+	 * coordinates, so it can be checked without touching the network.
+	 */
+	private static void assertDistanceCalculation() {
+		String frankfurt = """
+			{"status":"success","country":"Germany","countryCode":"DE","regionName":"Hesse",\
+			"city":"Frankfurt am Main","isp":"Hetzner Online GmbH","org":"Hetzner",\
+			"as":"AS24940 Hetzner Online GmbH","timezone":"Europe/Berlin","query":"1.2.3.4","lat":50.1109,"lon":8.6821}""";
+		String berlin = """
+			{"status":"success","country":"Germany","countryCode":"DE","regionName":"Berlin",\
+			"city":"Berlin","isp":"x","org":"x",\
+			"as":"AS","timezone":"Europe/Berlin","query":"1.2.3.5","lat":52.52,"lon":13.405}""";
+
+		LocationInfo a = LocationInfo.fromJson(frankfurt);
+		LocationInfo b = LocationInfo.fromJson(berlin);
+		if (a == null || b == null) {
+			throw new AssertionError("failed to parse locations for the distance check");
+		}
+
+		// The same point is ~0 km, not null.
+		if (a.distanceKm(a) == null || a.distanceKm(a) > 1.0) {
+			throw new AssertionError("distance to itself should be ~0 km");
+		}
+
+		// Frankfurt -> Berlin is ~423 km by great circle; keep a generous band so a tiny
+		// formula tweak doesn't fail the build over an estimate.
+		Double km = a.distanceKm(b);
+		if (km == null || km < 400 || km > 450) {
+			throw new AssertionError("unexpected Frankfurt-Berlin distance: " + km);
 		}
 	}
 

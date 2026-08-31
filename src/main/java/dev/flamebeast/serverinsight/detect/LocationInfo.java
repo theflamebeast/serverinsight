@@ -24,7 +24,9 @@ public record LocationInfo(
 	String org,
 	String asName,
 	String timezone,
-	String queriedIp
+	String queriedIp,
+	Double latitude,
+	Double longitude
 ) {
 	/**
 	 * Parses one geolocation response. Pure and side-effect free so it can be tested
@@ -63,7 +65,9 @@ public record LocationInfo(
 				string(object, "org"),
 				string(object, "as"),
 				string(object, "timezone"),
-				string(object, "query")
+				string(object, "query"),
+				number(object, "lat"),
+				number(object, "lon")
 			);
 		} catch (Exception malformed) {
 			return null;
@@ -77,6 +81,44 @@ public record LocationInfo(
 
 		String value = object.get(key).getAsString();
 		return value.isBlank() ? null : value;
+	}
+
+	private static Double number(JsonObject object, String key) {
+		if (!object.has(key) || object.get(key).isJsonNull()) {
+			return null;
+		}
+
+		try {
+			return object.get(key).getAsDouble();
+		} catch (NumberFormatException notNumeric) {
+			return null;
+		}
+	}
+
+	/**
+	 * Great-circle distance from this location to another, in kilometres. Null when either
+	 * location is missing its coordinates — the API normally returns them, but a reply
+	 * without them must not crash the tooltip.
+	 */
+	public Double distanceKm(LocationInfo other) {
+		if (other == null || latitude == null || longitude == null
+			|| other.latitude == null || other.longitude == null) {
+			return null;
+		}
+
+		double lat1 = Math.toRadians(latitude);
+		double lon1 = Math.toRadians(longitude);
+		double lat2 = Math.toRadians(other.latitude);
+		double lon2 = Math.toRadians(other.longitude);
+
+		// Haversine over a spherical Earth. Plenty for "how far is the server" — the
+		// geolocation data is itself a rough estimate.
+		double dLat = lat2 - lat1;
+		double dLon = lon2 - lon1;
+		double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+			+ Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		return 6371.0 * c; // mean Earth radius, km
 	}
 
 	/** "Frankfurt, Hesse, Germany", skipping whatever the lookup did not return. */

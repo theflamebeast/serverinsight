@@ -11,8 +11,8 @@ well it's ticking. One command, no server-side install.
 
 ## Features
 - **Country flags in the server list**: each server in the multiplayer list gets its host
-  country's flag on the right-hand side. Hover it for the city, region, ISP, network operator
-  and timezone.
+  country's flag on the right-hand side. Hover it for the city, region, ISP, network operator,
+  timezone and how far away the server is.
 - **Server details**: address, MOTD, version, protocol, player count, difficulty, your permission level
 - **Location**: `/serverinsight` also reports where the address points, with the same details on hover
 - **Server software**: identifies Paper / Purpur / Folia / Spigot / Fabric / Forge / vanilla from the
@@ -42,7 +42,8 @@ well it's ticking. One command, no server-side install.
   behind a proxy, CDN or anycast network geolocates to the edge node.
 - **Country lookups use a public geolocation API.** Only addresses shown in your server list are
   looked up, results are cached, and private/LAN addresses are never sent. If you are offline or
-  the lookup fails, flags simply don't appear.
+  the lookup fails, flags simply don't appear. The flag's distance line also asks the same API
+  where *you* are, once per session, cached and failing silently.
 - This mod is **client-side** and does not need to be installed on the server.
 
 ## Installation

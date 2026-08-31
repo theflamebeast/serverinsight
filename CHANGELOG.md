@@ -3,6 +3,26 @@
 Notable changes per release, written for players rather than for the commit log.
 Starts at 1.2.0 — earlier releases predate this file.
 
+## 1.2.1
+
+**Minecraft 26.2.** Requires Fabric Loader 0.19.3+ and Java 25+.
+
+### Added
+
+- **Distance to the server** on the flag hover, in kilometres — how far the address is from
+  you, using the same geolocation the flags already use.
+
+### Changed
+
+- The flag hover no longer carries the "where the address points" disclaimer; the place, IP
+  and distance lines already say what it was warning about.
+
+### Notes
+
+- The distance line needs your own location, so the mod now asks the same public geolocation
+  service where *you* are, once per session. It is cached, happens at most once, and fails
+  silently — no location, no distance line.
+
 ## 1.2.0
 
 **Minecraft 26.2.** Requires Fabric Loader 0.19.3+ and Java 25+.

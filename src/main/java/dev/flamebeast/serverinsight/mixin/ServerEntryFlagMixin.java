@@ -96,6 +96,7 @@ public abstract class ServerEntryFlagMixin {
 		List<Component> lines = new ArrayList<>();
 		lines.add(Component.literal(location.describePlace()).withStyle(ChatFormatting.WHITE));
 
+		addLine(lines, "Distance", distanceToLocal(location));
 		addLine(lines, "IP", location.queriedIp());
 		addLine(lines, "ISP", location.isp());
 
@@ -107,9 +108,18 @@ public abstract class ServerEntryFlagMixin {
 		addLine(lines, "AS", location.asName());
 		addLine(lines, "Timezone", location.timezone());
 
-		lines.add(Component.literal("Where the address points, not necessarily the host")
-			.withStyle(ChatFormatting.DARK_GRAY));
 		return lines;
+	}
+
+	/** How far the server's address is from the client, or null while it is not known. */
+	private static String distanceToLocal(LocationInfo location) {
+		LocationInfo local = GeoLocator.localLocation();
+		if (local == null) {
+			return null;
+		}
+
+		Double km = location.distanceKm(local);
+		return km == null ? null : Math.round(km) + " km";
 	}
 
 	private static void addLine(List<Component> lines, String label, String value) {

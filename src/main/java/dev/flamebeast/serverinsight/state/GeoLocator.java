@@ -37,7 +37,7 @@ public final class GeoLocator {
 	private static final String ENDPOINT = "http://ip-api.com/json/";
 
 	private static final String FIELDS =
-		"?fields=status,message,country,countryCode,regionName,city,isp,org,as,timezone,query";
+		"?fields=status,message,country,countryCode,regionName,city,isp,org,as,timezone,query,lat,lon";
 
 	private static final int MAX_REQUESTS_PER_WINDOW = 40;
 	private static final long WINDOW_MILLIS = 60_000L;
@@ -50,6 +50,10 @@ public final class GeoLocator {
 	private static final Map<String, LocationInfo> CACHE = new ConcurrentHashMap<>();
 	private static final Set<String> FAILED = ConcurrentHashMap.newKeySet();
 	private static final Set<String> IN_FLIGHT = ConcurrentHashMap.newKeySet();
+
+	/** The client's own location, for the distance shown in the flag tooltip. */
+	private static volatile LocationInfo local;
+	private static volatile boolean localAttempted;
 
 	/** Timestamps of recent requests, for the sliding-window throttle. */
 	private static final Deque<Long> RECENT = new ArrayDeque<>();
@@ -99,6 +103,40 @@ public final class GeoLocator {
 				}
 
 				IN_FLIGHT.remove(key);
+			});
+
+		return null;
+	}
+
+	/**
+	 * The client's own location, cached for the session.
+	 *
+	 * The distance feature needs somewhere to measure from, and the only way to get the
+	 * client's location is to ask the same endpoint "where is me" (ip-api answers a
+	 * request with no host with the caller's own location). That is one extra lookup
+	 * beyond the servers the user is looking at, and it necessarily reports the user's
+	 * own IP to the endpoint — worth knowing, since this is otherwise a purely passive
+	 * mod. It is fired at most once per session: a failure is remembered so an offline
+	 * or rate-limited start does not re-request on every frame the server list is open.
+	 *
+	 * Safe to call every frame, like {@link #lookup(String)}.
+	 */
+	public static LocationInfo localLocation() {
+		if (local != null) {
+			return local;
+		}
+
+		if (localAttempted || !claimRequestSlot()) {
+			return null;
+		}
+
+		localAttempted = true;
+		CompletableFuture
+			.supplyAsync(() -> fetch(""))
+			.whenComplete((info, error) -> {
+				if (info != null) {
+					local = info;
+				}
 			});
 
 		return null;
